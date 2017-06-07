@@ -8,7 +8,7 @@ import android.widget.Button;
 import com.example.lwl.download.service.DownloadService;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String URL ="";
+    public static final String URL ="https://github.com/allenwithcj/DownLoad/blob/master/raw/apk/app-debug.apk";
     private Button down_btn;
 
     @Override
