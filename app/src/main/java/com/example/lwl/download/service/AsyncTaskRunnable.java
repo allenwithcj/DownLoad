@@ -12,7 +12,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
+import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
@@ -71,8 +73,15 @@ public class AsyncTaskRunnable implements Runnable{
                 Intent intent = new Intent();
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.setDataAndType(Uri.fromFile(new File(Environment.getExternalStorageDirectory().toString() + "/cwp/","cwp.apk")),
-                        "application/vnd.android.package-archive");
+                Uri uri = null;
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    uri = FileProvider.getUriForFile(mContext,mContext.getPackageName()+".provider",
+                            new File(Environment.getExternalStorageDirectory().toString()+"/downFile/","down.apk"));
+                }else{
+                    uri = Uri.fromFile(new File(Environment.getExternalStorageDirectory().toString()+"/downFile/","down.apk"));
+                }
+                intent.setDataAndType(uri,"application/vnd.android.package-archive");
                 PendingIntent pendingIntent = PendingIntent.getActivity(mContext,0,intent,0);
                 mNotification.contentIntent = pendingIntent;
                 mNotificationManager.notify(NOTIFICATION_ID, mNotification);

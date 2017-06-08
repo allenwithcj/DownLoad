@@ -71,58 +71,63 @@ public class AsyncTaskUtil extends AsyncTask<String, Double, Boolean> {
     // 执行耗时操作,params[0]为url，params[1]为文件名（空则写入null）
     @Override
     protected Boolean doInBackground(String... params) {
+        if(!isSDK()){
+            return false;
+        }else{
+            //任务定时器一定要启动
+            mTimer.schedule(mTask, 0, 500);
+            try {
+                mUrl = params[0];
+                //建立链接
+                URLConnection connection = new URL(mUrl).openConnection();
+                //获取文件大小
+                mFileSize = connection.getContentLength();
+                Log.d(TAG, "the count of the url content length is : " + mFileSize);
 
-        //任务定时器一定要启动
-        mTimer.schedule(mTask, 0, 500);
+                //获得输入流
+                InputStream is = connection.getInputStream();
+                //先建立文件夹
+                File fold = new File(getFolderPath());
+                if (!fold.exists()) {
+                    fold.mkdirs();
+                }
 
-        try {
-            mUrl = params[0];
-            //建立链接
-            URLConnection connection = new URL(mUrl).openConnection();
-            //获取文件大小
-            mFileSize = connection.getContentLength();
-            Log.d(TAG, "the count of the url content length is : " + mFileSize);
+                //文件输出流
+                File dir = new File(getFolderPath()+"down.apk");
+                if(!dir.exists()){
+                    dir.createNewFile();
+                }
 
-            //获得输入流
-            InputStream is = connection.getInputStream();
-            //先建立文件夹
-            File fold = new File(getFolderPath());
-            if (!fold.exists()) {
-                fold.mkdirs();
+                FileOutputStream fos = new FileOutputStream(dir);
+                byte[] buff = new byte[1024];
+                int len;
+                while ((len = is.read(buff)) != -1) {
+                    mTotalReadSize += len;
+                    fos.write(buff, 0, len);
+                }
+                fos.flush();
+                fos.close();
+            } catch (Exception e) {
+                //异常,下载失败
+                mRunnable.setDatas(NOTIFICATION_PROGRESS_FAILED, 0);
+                //发送显示下载失败
+                mHandler.post(mRunnable);
+                if(mTimer != null && mTask != null){
+                    mTimer.cancel();
+                    mTask.cancel();
+                }
+                e.printStackTrace();
+                return false;
             }
-
-            String fileName = "cwp.apk";
-            //文件输出流
-            FileOutputStream fos = new FileOutputStream(new File(getFolderPath()
-                    + fileName));
-            byte[] buff = new byte[1024];
-            int len;
-            while ((len = is.read(buff)) != -1) {
-                mTotalReadSize += len;
-                fos.write(buff, 0, len);
-            }
-            fos.flush();
-            fos.close();
-
-        } catch (Exception e) {
-            //异常,下载失败
-            mRunnable.setDatas(NOTIFICATION_PROGRESS_FAILED, 0);
-            //发送显示下载失败
+            //下载成功
+            mRunnable.setDatas(NOTIFICATION_PROGRESS_SUCCEED, 0);
             mHandler.post(mRunnable);
             if(mTimer != null && mTask != null){
                 mTimer.cancel();
                 mTask.cancel();
             }
-            e.printStackTrace();
-            return false;
         }
-        //下载成功
-        mRunnable.setDatas(NOTIFICATION_PROGRESS_SUCCEED, 0);
-        mHandler.post(mRunnable);
-        if(mTimer != null && mTask != null){
-            mTimer.cancel();
-            mTask.cancel();
-        }
+
         return true;
     }
 
@@ -133,7 +138,7 @@ public class AsyncTaskUtil extends AsyncTask<String, Double, Boolean> {
 
     //下载文件夹路径
     private String getFolderPath() {
-        return Environment.getExternalStorageDirectory().toString() + "/cwp/";
+        return Environment.getExternalStorageDirectory().getPath()+"/downFile/";
     }
 
 
@@ -157,6 +162,11 @@ public class AsyncTaskUtil extends AsyncTask<String, Double, Boolean> {
     @Override
     protected void onProgressUpdate(Double... values) {
         super.onProgressUpdate(values);
+    }
+
+
+    public boolean isSDK(){
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
     }
 
 }
